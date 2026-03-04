@@ -1,0 +1,232 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        font:
+          12px/1.4 Inter,
+          system-ui,
+          sans-serif;
+        margin: 12px;
+      }
+      label {
+        display: block;
+        margin-top: 10px;
+        font-weight: 600;
+      }
+      input,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        margin-top: 6px;
+      }
+      button {
+        margin-top: 12px;
+        width: 100%;
+        padding: 10px;
+        cursor: pointer;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .hint {
+        color: #666;
+        margin-top: 6px;
+      }
+
+      .previewWrap {
+        margin-top: 12px;
+        border: 1px solid #e6e6e6;
+        border-radius: 8px;
+        padding: 10px;
+      }
+      .previewTitle {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+      }
+      .previewTitle span {
+        color: #666;
+        font-weight: 400;
+      }
+      .preview {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        background: #fff;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .preview svg {
+        width: 100%;
+        height: 100%;
+      }
+      .error {
+        color: #b00020;
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <label>URL</label>
+    <input id="url" placeholder="https://example.com" />
+
+    <div class="row">
+      <div>
+        <label>Size (px)</label>
+        <input id="size" type="number" min="64" step="8" value="256" />
+      </div>
+      <div>
+        <label>Error correction</label>
+        <select id="ecc">
+          <option value="L">L (7%)</option>
+          <option value="M" selected>M (15%)</option>
+          <option value="Q">Q (25%)</option>
+          <option value="H">H (30%)</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Quiet zone (modules)</label>
+    <input id="margin" type="number" min="0" step="1" value="0" />
+    <div class="hint">Quiet zone = white border around the QR.</div>
+
+    <div class="previewWrap">
+      <div class="previewTitle">
+        <strong>Preview</strong>
+        <span id="meta"></span>
+      </div>
+      <div class="preview" id="preview">
+        <div class="hint">Enter a URL to preview.</div>
+      </div>
+      <div class="error" id="err" style="display: none"></div>
+    </div>
+
+    <button id="generate">Insert vector into canvas</button>
+
+    <!-- QR library for UI preview -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      function clampInt(v, min, max, fallback) {
+        const n = Number(v);
+        if (!Number.isFinite(n)) return fallback;
+        return Math.max(min, Math.min(max, Math.round(n)));
+      }
+
+      function pickQrMode(text) {
+        if (/^[0-9]+$/.test(text)) return "Numeric";
+        if (/^[0-9A-Z $%*+\-./:]+$/.test(text)) return "Alphanumeric";
+        return "Byte";
+      }
+
+      function buildSvg({ text, ecc, margin }) {
+        // window.qrcode is provided by qrcode-generator UMD build
+        const qr = window.qrcode(0, ecc);
+        const mode = pickQrMode(text);
+        qr.addData(text, mode);
+        qr.make();
+
+        const moduleCount = qr.getModuleCount();
+        const totalModules = moduleCount + margin * 2;
+
+        let rects = "";
+        for (let r = 0; r < moduleCount; r++) {
+          for (let c = 0; c < moduleCount; c++) {
+            if (qr.isDark(r, c)) {
+              const x = c + margin;
+              const y = r + margin;
+              rects += `<rect x="${x}" y="${y}" width="1" height="1" />`;
+            }
+          }
+        }
+
+        const svg =
+          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalModules} ${totalModules}" shape-rendering="crispEdges">` +
+          `<rect x="0" y="0" width="${totalModules}" height="${totalModules}" fill="#fff"/>` +
+          `<g fill="#000">${rects}</g>` +
+          `</svg>`;
+
+        return { svg, moduleCount, totalModules, mode };
+      }
+
+      function setError(message) {
+        const el = $("err");
+        if (!message) {
+          el.style.display = "none";
+          el.textContent = "";
+        } else {
+          el.style.display = "block";
+          el.textContent = message;
+        }
+      }
+
+      function renderPreview() {
+        const url = $("url").value.trim();
+        const margin = clampInt($("margin").value, 0, 20, 0);
+        const ecc = $("ecc").value;
+
+        if (!url) {
+          $("preview").innerHTML =
+            `<div class="hint">Enter a URL to preview.</div>`;
+          $("meta").textContent = "";
+          setError("");
+          return;
+        }
+
+        try {
+          const { svg, moduleCount, mode } = buildSvg({
+            text: url,
+            ecc,
+            margin,
+          });
+          $("preview").innerHTML = svg;
+          $("meta").textContent =
+            `${moduleCount}×${moduleCount} modules · ${mode}`;
+          setError("");
+        } catch (e) {
+          $("preview").innerHTML =
+            `<div class="hint">Could not render preview.</div>`;
+          $("meta").textContent = "";
+          setError(String(e && e.message ? e.message : e));
+        }
+      }
+
+      // live preview updates
+      ["url", "ecc", "margin"].forEach((id) => {
+        $(id).addEventListener("input", renderPreview);
+        $(id).addEventListener("change", renderPreview);
+      });
+
+      // initial render
+      renderPreview();
+
+      $("generate").onclick = () => {
+        const url = $("url").value.trim();
+        const size = Number($("size").value);
+        const ecc = $("ecc").value;
+        const margin = Number($("margin").value);
+
+        parent.postMessage(
+          { pluginMessage: { type: "generate", url, size, ecc, margin } },
+          "*",
+        );
+      };
+
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+        if (msg.type === "error") {
+          setError(msg.message);
+        }
+      };
+    </script>
+  </body>
+</html>
