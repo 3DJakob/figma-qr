@@ -110,10 +110,6 @@
       </div>
     </div>
 
-    <label>Quiet zone (modules)</label>
-    <input id="margin" type="number" min="0" step="1" value="0" />
-    <div class="hint">Quiet zone = white border around the QR.</div>
-
     <div class="previewWrap">
       <div class="previewTitle">
         <strong>Preview</strong>
@@ -125,7 +121,7 @@
       <div class="error" id="err" style="display: none"></div>
     </div>
 
-    <button id="generate">Insert vector into canvas</button>
+    <button id="generate">Insert QR Code</button>
 
     <!-- QR library for UI preview -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
@@ -145,7 +141,7 @@
         return "Byte";
       }
 
-      function buildSvg({ text, ecc, margin }) {
+      function buildSvg({ text, ecc }) {
         // window.qrcode is provided by qrcode-generator UMD build
         const qr = window.qrcode(0, ecc);
         const mode = pickQrMode(text);
@@ -153,14 +149,14 @@
         qr.make();
 
         const moduleCount = qr.getModuleCount();
-        const totalModules = moduleCount + margin * 2;
+        const totalModules = moduleCount;
 
         let rects = "";
         for (let r = 0; r < moduleCount; r++) {
           for (let c = 0; c < moduleCount; c++) {
             if (qr.isDark(r, c)) {
-              const x = c + margin;
-              const y = r + margin;
+              const x = c;
+              const y = r;
               rects += `<rect x="${x}" y="${y}" width="1" height="1" />`;
             }
           }
@@ -188,7 +184,6 @@
 
       function renderPreview() {
         const url = $("url").value.trim();
-        const margin = clampInt($("margin").value, 0, 20, 0);
         const ecc = $("ecc").value;
 
         if (!url) {
@@ -203,7 +198,6 @@
           const { svg, moduleCount, mode } = buildSvg({
             text: url,
             ecc,
-            margin,
           });
           $("preview").innerHTML = svg;
           $("meta").textContent =
@@ -218,7 +212,7 @@
       }
 
       // live preview updates
-      ["url", "ecc", "margin"].forEach((id) => {
+      ["url", "ecc"].forEach((id) => {
         $(id).addEventListener("input", renderPreview);
         $(id).addEventListener("change", renderPreview);
       });
@@ -230,10 +224,9 @@
         const url = $("url").value.trim();
         const size = Number($("size").value);
         const ecc = $("ecc").value;
-        const margin = Number($("margin").value);
 
         parent.postMessage(
-          { pluginMessage: { type: "generate", url, size, ecc, margin } },
+          { pluginMessage: { type: "generate", url, size, ecc } },
           "*",
         );
       };

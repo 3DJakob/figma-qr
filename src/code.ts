@@ -5,12 +5,11 @@ type GenerateMsg = {
   url: string;
   size: number; // target size in px
   ecc: "L" | "M" | "Q" | "H";
-  margin: number; // quiet zone in modules
 };
 
 type QrMode = "Numeric" | "Alphanumeric" | "Byte";
 
-figma.showUI(__html__, { width: 320, height: 630 });
+figma.showUI(__html__, { width: 320, height: 530 });
 
 figma.ui.onmessage = (msg: GenerateMsg) => {
   if (msg.type !== "generate") return;
@@ -22,7 +21,6 @@ figma.ui.onmessage = (msg: GenerateMsg) => {
   }
 
   const size = clampInt(msg.size, 64, 2048, 256);
-  const margin = clampInt(msg.margin, 0, 20, 0);
   const ecc = msg.ecc ?? "M";
 
   try {
@@ -33,7 +31,7 @@ figma.ui.onmessage = (msg: GenerateMsg) => {
     qr.make();
 
     const moduleCount = qr.getModuleCount();
-    const totalModules = moduleCount + margin * 2;
+    const totalModules = moduleCount;
 
     // Build an SVG where each dark module is a 1x1 rect in module-space.
     // Then we scale to desired pixel size inside Figma.
@@ -41,8 +39,8 @@ figma.ui.onmessage = (msg: GenerateMsg) => {
     for (let r = 0; r < moduleCount; r++) {
       for (let c = 0; c < moduleCount; c++) {
         if (qr.isDark(r, c)) {
-          const x = c + margin;
-          const y = r + margin;
+          const x = c;
+          const y = r;
           rects += `<rect x="${x}" y="${y}" width="1" height="1" />`;
         }
       }
