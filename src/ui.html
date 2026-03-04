@@ -17,7 +17,8 @@
       label {
         display: block;
         margin-top: 10px;
-        font-weight: 600;
+        font-weight: 500;
+        color: #888;
       }
       input,
       select {
@@ -44,6 +45,13 @@
         background: var(--accent-color);
         color: #fff;
         font-weight: 600;
+        transition:
+          opacity 160ms ease,
+          background-color 160ms ease;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
       }
       .row {
         display: grid;
@@ -66,9 +74,10 @@
         justify-content: space-between;
         align-items: baseline;
         margin-bottom: 8px;
+        color: #888;
       }
       .previewTitle span {
-        color: #666;
+        color: #888;
         font-weight: 400;
       }
       .preview {
@@ -185,6 +194,7 @@
       function renderPreview() {
         const url = $("url").value.trim();
         const ecc = $("ecc").value;
+        $("generate").disabled = !url;
 
         if (!url) {
           $("preview").innerHTML =
@@ -222,6 +232,7 @@
 
       $("generate").onclick = () => {
         const url = $("url").value.trim();
+        if (!url) return;
         const size = Number($("size").value);
         const ecc = $("ecc").value;
 
