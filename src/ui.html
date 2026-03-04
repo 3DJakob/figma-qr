@@ -3,6 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <style>
+      :root {
+        --accent-color: #18a0fb;
+      }
+
       body {
         font:
           12px/1.4 Inter,
@@ -21,12 +25,25 @@
         box-sizing: border-box;
         padding: 8px;
         margin-top: 6px;
+        border-radius: 10px;
+        border: 1px solid #d9d9d9;
+      }
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent-color);
+        box-shadow: 0 0 0 2px rgba(24, 160, 251, 0.2);
       }
       button {
         margin-top: 12px;
         width: 100%;
         padding: 10px;
         cursor: pointer;
+        border: none;
+        border-radius: 10px;
+        background: var(--accent-color);
+        color: #fff;
+        font-weight: 600;
       }
       .row {
         display: grid;
@@ -41,7 +58,7 @@
       .previewWrap {
         margin-top: 12px;
         border: 1px solid #e6e6e6;
-        border-radius: 8px;
+        border-radius: 10px;
         padding: 10px;
       }
       .previewTitle {
@@ -61,6 +78,7 @@
         display: grid;
         place-items: center;
         overflow: hidden;
+        border-radius: 10px;
       }
       .preview svg {
         width: 100%;
