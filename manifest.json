@@ -1,6 +1,6 @@
 {
-  "name": "Vector QR Generator",
-  "id": "com.yourname.vector-qr-generator",
+  "name": "QR Generator",
+  "id": "com.3djakob.qr-generator",
   "api": "1.0.0",
   "main": "dist/code.js",
   "ui": "src/ui.html",
